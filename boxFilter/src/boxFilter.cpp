@@ -28,6 +28,7 @@ void BoxFilter::filter(float *input, int radius, int height, int width, float *o
   }
 }
 
+//2维变2次1维
 void BoxFilter::fastFilter(float *input, int radius, int height, int width, float *output) {
   float *cachePtr = &(cache[0]);
   // sum horizonal
@@ -61,6 +62,11 @@ void BoxFilter::fastFilter(float *input, int radius, int height, int width, floa
   }
 }
 
+void BoxFilter::fastFilterSAT(float *input, int radius, int height, int width, float *output){
+  
+}
+
+//积分图
 void BoxFilter::fastFilterV2(float *input, int radius, int height, int width, float *output) {
   float *cachePtr = &(cache[0]);
   // sum horizonal

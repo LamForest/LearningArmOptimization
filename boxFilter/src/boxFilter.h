@@ -17,6 +17,8 @@ public:
 
   void fastFilter(float *input, int radius, int height, int width, float *output);
 
+  void fastFilterSAT(float *input, int radius, int height, int width, float *output);
+
   void fastFilterV2(float *input, int radius, int height, int width, float *output);
 
   void fastFilterV2NeonIntrinsics(float *input, int radius, int height, int width, float *output);
