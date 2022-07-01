@@ -63,7 +63,48 @@ void BoxFilter::fastFilter(float *input, int radius, int height, int width, floa
 }
 
 void BoxFilter::fastFilterSAT(float *input, int radius, int height, int width, float *output){
-  
+  float *cachePtr = &(cache[0]);
+    for(int h = 0; h < height; ++h){
+        for(int w = 0; w < width; ++w){
+        int cur_offset = h * width + w;
+        float cur = 0;
+        if(h > 0){
+            cur += cachePtr[cur_offset - width];
+        }
+        if(w > 0){
+            cur += cachePtr[cur_offset - 1];
+        }
+        if(w > 0 && h > 0){
+            cur -= cachePtr[cur_offset - width - 1];
+        }
+        cur += input[cur_offset];
+        cachePtr[cur_offset] = cur;
+        }
+    }
+    // const int AREA = (radius + 1) * (radius + 1);
+    for(int h = 0; h < height; ++h){
+        for(int w = 0; w < width; ++w){
+        int right = std::min(width - 1, w + radius);
+        int left = std::max(0, w - radius);
+        int up = std::max(0, h - radius);
+        int bottom = std::min(height - 1, h +radius);
+        // int AREA = (bottom - up + 1) * (right - left + 1);
+        float A = 0, B = 0, C = 0, D = 0;
+        if(left > 0 && up > 0){
+            A = cachePtr[(up - 1) * width + (left - 1)];
+        }
+        if(left > 0){
+            D = cachePtr[bottom * width + (left - 1)];
+        }
+        if(up > 0){
+            B = cachePtr[(up - 1) *width + (right)];
+        }
+        C = cachePtr[bottom * width + right];
+        // printf("i: %d ; A:%.2f, B:%.2f, C:%.2f, D:%.2f, left: %d, right: %d, up: %d, bottom: %d\n", h*width + w,A, B, C, D, left, right, up, bottom);
+        output[h*width + w] = (A + C - B - D);
+
+        }
+    }
 }
 
 //积分图
