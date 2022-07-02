@@ -26,29 +26,29 @@ static int width = 2000;
 static int radius = 5;
 static int printMat = 1;
 
-constexpr static double EPSILON = 0.00001;
+constexpr static double EPSILON = 0.0001;
 
-static std::vector<float> gth; 
+static std::vector<float> gth(width * height, 0); 
 
 
 static bool is_correct(std::vector<float> output){
-    return true;
-    // double sum_diff = 0;
-    // for (int h = 0; h < height; ++h) {
-    //     int height_sift = h * width;
-    //     for (int w = 0; w < width; ++w) {
-    //         sum_diff += std::abs(output[height_sift + w] - gth[height_sift + w]);
-    //     }
-    // }
-    // double avg = (sum_diff) / width * height;
-    // printf("avg diff = %.2f\n", avg);
-    // return (avg) < EPSILON;
-    
+    // return true;
+    double avg_diff = 0;
+    // gth = output;
+    for (int h = 0; h < height; ++h) {
+        int height_sift = h * width;
+        for (int w = 0; w < width; ++w) {
+            avg_diff += std::pow(std::abs(output[height_sift + w] - gth[height_sift + w]), 2.0) /(width * height) ;
+        }
+    }
+    print(&gth[0], height, width);
+    printf("avg diff = %.6f\n", avg_diff);
+    return (avg_diff) < EPSILON;
 }
 
 
 
-TEST(netTest, org_boxfilter)
+TEST(netTest, org_boxfilter) /** should always be called, to get gth*/
 {
     std::vector<float> input;
     std::vector<float> output;
@@ -94,7 +94,7 @@ TEST(netTest, org_boxfilter)
     }
 
     /** use result of org_boxfilter as groundtruth*/
-    // gth = std::move(output);
+    gth = output;
 }
 
 TEST(netTest, fast_boxfilter)
