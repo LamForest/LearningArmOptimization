@@ -20,11 +20,11 @@ static void print(float *input, int height, int width) {
 
 
 
-static int loop = 5;
+static int loop = 10;
 static int height = 2000;
 static int width = 2000;
 static int radius = 5;
-static int printMat = 1;
+static int printMat = 0;
 
 constexpr static double EPSILON = 0.0001;
 
