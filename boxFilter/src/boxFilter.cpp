@@ -2,7 +2,6 @@
 #include <chrono>
 #include <random>
 #include <iostream>
-
 #if __ARM_NEON
 #include <arm_neon.h>
 #endif // __ARM_NEON
@@ -44,6 +43,8 @@ void BoxFilter::fastFilter(float *input, int radius, int height, int width, floa
       }
 
       cachePtr[sift + w] = tmp;
+
+      output[sift+w] = 0; //避免output输出与BoxFilter::fastFilter执行次数有关
     }
   }
 
@@ -56,12 +57,14 @@ void BoxFilter::fastFilter(float *input, int radius, int height, int width, floa
     for (int sh = start_h; sh <= end_h; ++sh) {
       int out_shift = sh * width;
       for (int w = 0; w < width; ++w) {
-        output[out_shift + w] += cachePtr[shift + w];
+        output[shift + w] += cachePtr[out_shift + w]; //此处为 += ，多次执行BoxFilter::fastFilter会使得output不断增大
       }
     }
   }
 }
-
+/***
+ * 积分图
+ * */
 void BoxFilter::fastFilterSAT(float *input, int radius, int height, int width, float *output){
   float *cachePtr = &(cache[0]);
     for(int h = 0; h < height; ++h){
@@ -105,6 +108,127 @@ void BoxFilter::fastFilterSAT(float *input, int radius, int height, int width, f
 
         }
     }
+}
+
+void BoxFilter::fastFilterSS(float *input, int radius, int height, int width, float *output) {
+    float *cachePtr = &(cache[0]);
+    for(int h = 0; h < height; ++h){
+        float cur = 0;
+        int shift = h * width;
+        for(int w = 0; w < radius; ++w){
+        cur += input[shift + w];
+        }
+        int w = 0;
+        for(; w <= radius; ++w){
+        cur += input[shift+w+radius];
+        cachePtr[shift + w] = cur;
+        }
+        
+        for(; w < width - radius; ++w){
+        cur += input[shift+w+radius] - input[shift+w-radius-1];
+        cachePtr[shift + w] = cur;
+        }
+
+        for(; w < width; ++w){
+        cur -= input[shift+w-radius-1];
+        cachePtr[shift + w] = cur;
+        }
+    }
+
+    for(int w = 0; w < width; ++w){
+        float cur = 0;
+        // int shift =  * width;
+        for(int h = 0; h < radius; ++h){
+        cur += cachePtr[width * h + w];
+        }
+        int h = 0;
+        for(; h <= radius; ++h){
+          int shift = width * h;
+          cur += cachePtr[shift+w+radius*width];
+          output[shift + w] = cur;
+        }
+        
+        for(; h < height - radius; ++h){
+          int shift = width * h;
+          cur += cachePtr[shift+w+radius*width] - cachePtr[shift+w-(radius+1) * width];
+          output[shift + w] = cur;
+        }
+
+        for(; h < height; ++h){
+          int shift = width * h;
+          cur -= cachePtr[shift+w-(radius+1) * width];
+          output[shift + w] = cur;
+        }
+    }
+}
+
+/***
+ * 2次1维卷积，cache-friendly版本
+ * TODO: width height < 2 radius + 1 的时候会导致段错误
+ * */
+void BoxFilter::fastFilterSSCF(float *input, int radius, int height, int width, float *output) {
+    float *cachePtr = &(cache[0]);
+    for(int h = 0; h < height; ++h){
+        float cur = 0;
+        int shift = h * width;
+        for(int w = 0; w < radius; ++w){
+        cur += input[shift + w];
+        }
+        int w = 0;
+        for(; w <= radius; ++w){
+        cur += input[shift+w+radius];
+        cachePtr[shift + w] = cur;
+        }
+        
+        for(; w < width - radius; ++w){
+        cur += input[shift+w+radius] - input[shift+w-radius-1];
+        cachePtr[shift + w] = cur;
+        }
+
+        for(; w < width; ++w){
+        cur -= input[shift+w-radius-1];
+        cachePtr[shift + w] = cur;
+        }
+    }
+    float *colSumPtr = &(colSum[0]);
+    for (int w = 0; w < width; ++w) {
+      colSumPtr[w] = 0;
+    } 
+    for(int h = 0; h < radius; ++h){
+        int shift = h * width;
+        for(int w = 0; w < width; ++w){
+            colSumPtr[w] += cachePtr[shift + w];
+        }
+    }
+    int h = 0;
+
+    for(; h <= radius; ++h){
+        int shift = h * width;
+        int offset = radius * width;
+        for(int w = 0; w < width; ++w){
+            colSumPtr[w] += cachePtr[shift + w + offset];
+            output[shift+w] = colSumPtr[w];
+        }
+    }
+    
+
+    for(; h < height - radius; ++h){
+        int shift = h * width;
+        int offset = radius * width;
+        for(int w = 0; w < width; ++w){
+            colSumPtr[w] += cachePtr[shift + w + offset] - cachePtr[shift + w - offset - width];
+            output[shift+w] = colSumPtr[w];
+        }
+    }
+
+    for(; h < height; ++h){
+        int shift = h * width;
+        int offset = radius * width;
+        for(int w = 0; w < width; ++w){
+            colSumPtr[w] -= cachePtr[shift + w - offset - width];
+            output[shift+w] = colSumPtr[w];
+        }
+    }   
 }
 
 //积分图

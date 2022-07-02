@@ -9,7 +9,7 @@ public:
 
   void init(int height, int width, int radius) {
     free();
-    cache.resize(height * width);
+    cache.resize(height * width); //多此一举
     colSum.resize(width);
   }
 
@@ -19,7 +19,11 @@ public:
 
   void fastFilterSAT(float *input, int radius, int height, int width, float *output);
 
-  void fastFilterV2(float *input, int radius, int height, int width, float *output);
+  //将2维卷积拆分成2次一维卷积，Spatial Seperable Conv
+  //对于boxfilter，拆分是精确的
+  void fastFilterSS(float *input, int radius, int height, int width, float *output); //vannila 
+  void fastFilterSSCF(float *input, int radius, int height, int width, float *output); //cache friendly
+  void fastFilterV2(float *input, int radius, int height, int width, float *output); //Impl by 
 
   void fastFilterV2NeonIntrinsics(float *input, int radius, int height, int width, float *output);
 

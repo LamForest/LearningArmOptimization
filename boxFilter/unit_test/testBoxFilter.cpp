@@ -11,64 +11,91 @@ static void print(float *input, int height, int width) {
   for (int h = 10; h < 11; ++h) {
     int height_sift = h * width;
     std:: cout << std::endl;
-    for (int w = 0; w < 50; ++w) {
+    for (int w = 0; w < 5; ++w) {
       std::cout << input[height_sift + w] << " ";
     }
   }
   std::cout << std::endl;
 };
 
-static int loop = 10;
+
+
+static int loop = 5;
 static int height = 2000;
 static int width = 2000;
 static int radius = 5;
 static int printMat = 1;
 
-// TEST(netTest, org_boxfilter)
-// {
-//     std::vector<float> input;
-//     std::vector<float> output;
+constexpr static double EPSILON = 0.00001;
 
-//     int size = height * width;
-
-//     input.resize(size);
-//     output.resize(size);
-
-//     std::random_device rd;
-//     std::mt19937 gen(0);
-//     std::uniform_real_distribution<> dis(-2.0, 2.0);
-
-//     for (int i = 0; i < size; ++i) {
-//         input[i] = dis(gen);
-//     }
-
-//     for (int i = 0; i < size; ++i) {
-//         output[i] = 0;
-//     }
-
-//     BoxFilter boxFilter;
-//     boxFilter.init(height, width, radius);
-
-//     float avgTime = 0;
-//     float tmp;
-//     for (int i = 0; i < loop; ++i) {
-//         auto startClock = std::chrono::system_clock::now();
-//         boxFilter.filter(&input[0], radius, height, width, &output[0]);
-//         auto endClock = std::chrono::system_clock::now();
-//         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endClock - startClock);
-//         tmp = double(duration.count()) * std::chrono::microseconds::period::num / 1000;
-//         avgTime += tmp;
-//         std::cout << "          [" << i << "]" << " BoxFilfer Cost time: " << tmp << "ms" << std::endl;
-
-//     }
-//     std::cout << "\n          BoxFilfer Average Cost time: " << avgTime / loop << "ms" << std::endl;
+static std::vector<float> gth; 
 
 
-//     if (printMat == 1) {
-//         std::cout << "result: " << std::endl;
-//         print(&output[0], height, width);
-//     }
-// }
+static bool is_correct(std::vector<float> output){
+    return true;
+    // double sum_diff = 0;
+    // for (int h = 0; h < height; ++h) {
+    //     int height_sift = h * width;
+    //     for (int w = 0; w < width; ++w) {
+    //         sum_diff += std::abs(output[height_sift + w] - gth[height_sift + w]);
+    //     }
+    // }
+    // double avg = (sum_diff) / width * height;
+    // printf("avg diff = %.2f\n", avg);
+    // return (avg) < EPSILON;
+    
+}
+
+
+
+TEST(netTest, org_boxfilter)
+{
+    std::vector<float> input;
+    std::vector<float> output;
+
+    int size = height * width;
+
+    input.resize(size);
+    output.resize(size);
+
+    std::random_device rd;
+    std::mt19937 gen(0);
+    std::uniform_real_distribution<> dis(-2.0, 2.0);
+
+    for (int i = 0; i < size; ++i) {
+        input[i] = dis(gen);
+    }
+
+    for (int i = 0; i < size; ++i) {
+        output[i] = 0;
+    }
+
+    BoxFilter boxFilter;
+    boxFilter.init(height, width, radius);
+
+    float avgTime = 0;
+    float tmp;
+    for (int i = 0; i < loop; ++i) {
+        auto startClock = std::chrono::system_clock::now();
+        boxFilter.filter(&input[0], radius, height, width, &output[0]);
+        auto endClock = std::chrono::system_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endClock - startClock);
+        tmp = double(duration.count()) * std::chrono::microseconds::period::num / 1000;
+        avgTime += tmp;
+        std::cout << "          [" << i << "]" << " BoxFilfer Cost time: " << tmp << "ms" << std::endl;
+
+    }
+    std::cout << "\n          BoxFilfer Average Cost time: " << avgTime / loop << "ms" << std::endl;
+
+
+    if (printMat == 1) {
+        std::cout << "result: " << std::endl;
+        print(&output[0], height, width);
+    }
+
+    /** use result of org_boxfilter as groundtruth*/
+    // gth = std::move(output);
+}
 
 TEST(netTest, fast_boxfilter)
 {
@@ -105,10 +132,9 @@ TEST(netTest, fast_boxfilter)
         tmp = double(duration.count()) * std::chrono::microseconds::period::num / 1000;
         avgTime += tmp;
         std::cout << "          [" << i << "]" << " Fast BoxFilfer Cost time: " << tmp << "ms" << std::endl;
-
     }
     std::cout << "\n          Fast BoxFilfer Average Cost time: " << avgTime / loop << "ms" << std::endl;
-
+    EXPECT_EQ(is_correct(output), true) << " ERROR: result is wrong. " ;
 
     if (printMat == 1) {
         std::cout << "result: " << std::endl;
@@ -116,67 +142,6 @@ TEST(netTest, fast_boxfilter)
     }
 }
 
-// TEST(netTest, fast_boxfilter_SAT_test){
-//     const int N = 16;
-//     // float input[N] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
-//     std::vector<float> input(N, 1);
-//     std::vector<float> output(N, 0);
-//     float cachePtr[N];
-
-//     int height = 4, width = 4;
-//     int radius = 1;
-
-//     for(int h = 0; h < height; ++h){
-//         for(int w = 0; w < width; ++w){
-//         int cur_offset = h * width + w;
-//         float cur = 0;
-//         if(h > 0){
-//             cur += cachePtr[cur_offset - width];
-//         }
-//         if(w > 0){
-//             cur += cachePtr[cur_offset - 1];
-//         }
-//         if(w > 0 && h > 0){
-//             cur -= cachePtr[cur_offset - width - 1];
-//         }
-//         cur += input[cur_offset];
-//         cachePtr[cur_offset] = cur;
-//         }
-//     }
-//     // const int AREA = (radius + 1) * (radius + 1);
-//     for(int h = 0; h < height; ++h){
-//         for(int w = 0; w < width; ++w){
-//         int right = std::min(width - 1, w + radius);
-//         int left = std::max(0, w - radius);
-//         int up = std::max(0, h - radius);
-//         int bottom = std::min(height - 1, h +radius);
-//         // int AREA = (bottom - up + 1) * (right - left + 1);
-//         float A = 0, B = 0, C = 0, D = 0;
-//         if(left > 0 && up > 0){
-//             A = cachePtr[(up - 1) * width + (left - 1)];
-//         }
-//         if(left > 0){
-//             D = cachePtr[bottom * width + (left - 1)];
-//         }
-//         if(up > 0){
-//             B = cachePtr[(up - 1) *width + (right)];
-//         }
-//         C = cachePtr[bottom * width + right];
-//         printf("i: %d ; A:%.2f, B:%.2f, C:%.2f, D:%.2f, left: %d, right: %d, up: %d, bottom: %d\n", h*width + w,A, B, C, D, left, right, up, bottom);
-//         output[h*width + w] = (A + C - B - D);
-
-//         }
-//     }
-
-//     for(int i = 0; i < N; ++i){
-//         printf("%.1f, ", cachePtr[i]);
-//     }
-//     printf("\n");
-//     for(int i = 0; i < N; ++i){
-//         printf("%.1f, ", output[i]);
-//     }
-
-// }
 
 TEST(netTest, fast_boxfilter_SAT)
 {
@@ -217,12 +182,211 @@ TEST(netTest, fast_boxfilter_SAT)
     }
     std::cout << "\n          Fast BoxFilfer SAT Average Cost time: " << avgTime / loop << "ms" << std::endl;
 
+    EXPECT_EQ(is_correct(output), true) << " ERROR: result is wrong. " ;
+    if (printMat == 1) {
+        std::cout << "result: " << std::endl;
+        print(&output[0], height, width);
+    }
 
+    
+}
+
+#ifdef MYDEBUG
+// fast_boxfilter_SS test okay
+TEST(netTest, fast_boxfilter_SS_test){
+    constexpr int height = 10, width = height;
+    constexpr int N = height * width;
+    constexpr int radius = 3;
+    // float input[N] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
+    std::vector<float> input(N, 1);
+    std::vector<float> output(N, 0);
+    float cachePtr[N];
+    float colSumPtr[width];
+    for(int i = 0; i < width; ++i){
+        colSumPtr[i] = 0;
+    }
+
+    auto printColSum = [&colSumPtr](int h){
+        printf("h = %d:\n", h);
+        for(int i = 0; i < width; ++i){
+            printf("%.1f, ", colSumPtr[i]);
+        }
+        printf("\n- - - - - -\n\n");
+    };
+
+    for(int h = 0; h < height; ++h){
+        float cur = 0;
+        int shift = h * width;
+        for(int w = 0; w < radius; ++w){
+        cur += input[w];
+        }
+        int w = 0;
+        for(; w <= radius; ++w){
+        cur += input[w+radius];
+        cachePtr[shift + w] = cur;
+        }
+        
+        for(; w < width - radius; ++w){
+        cur += input[w+radius] - input[w-radius-1];
+        cachePtr[shift + w] = cur;
+        }
+
+        for(; w < width; ++w){
+        cur -= input[w-radius-1];
+        cachePtr[shift + w] = cur;
+        }
+    }
+
+    for(int h = 0; h < radius; ++h){
+        int shift = h * width;
+        for(int w = 0; w < width; ++w){
+            colSumPtr[w] += cachePtr[shift + w];
+        }
+        printColSum(h);
+    }
+    int h = 0;
+
+    for(; h <= radius; ++h){
+        int shift = h * width;
+        int offset = radius * width;
+        for(int w = 0; w < width; ++w){
+            colSumPtr[w] += cachePtr[shift + w + offset];
+            output[shift+w] = colSumPtr[w];
+        }
+        printColSum(h);
+    }
+    
+
+    for(; h < height - radius; ++h){
+        int shift = h * width;
+        int offset = radius * width;
+        for(int w = 0; w < width; ++w){
+            colSumPtr[w] += cachePtr[shift + w + offset] - cachePtr[shift + w - offset - width];
+            output[shift+w] = colSumPtr[w];
+        }
+        printColSum(h);
+    }
+
+    for(; h < height; ++h){
+        int shift = h * width;
+        int offset = radius * width;
+        for(int w = 0; w < width; ++w){
+            colSumPtr[w] -= cachePtr[shift + w - offset - width];
+            output[shift+w] = colSumPtr[w];
+        }
+        printColSum(h);
+    }
+
+    for(int h = 0; h < height; ++h){
+        for(int w = 0; w < width; ++w){
+            printf("%.1f, ", cachePtr[h * width + w]);
+        }
+        printf("\n");
+    }
+    printf("\n");
+    for(int h = 0; h < height; ++h){
+        for(int w = 0; w < width; ++w){
+            printf("%.1f, ", output[h * width + w]);
+        }
+        printf("\n");
+    }
+
+}
+#endif
+
+TEST(netTest, fast_boxfilter_SS_CF)
+{
+    std::vector<float> input;
+    std::vector<float> output;
+
+    int size = height * width;
+
+    input.resize(size);
+    output.resize(size);
+
+    std::random_device rd;
+    std::mt19937 gen(0);
+    std::uniform_real_distribution<> dis(-2.0, 2.0);
+
+    for (int i = 0; i < size; ++i) {
+        input[i] = dis(gen);
+    }
+
+    for (int i = 0; i < size; ++i) {
+        output[i] = 0;
+    }
+
+    BoxFilter boxFilter;
+    boxFilter.init(height, width, radius);
+
+    float avgTime = 0;
+    float tmp;
+    for (int i = 0; i < loop; ++i) {
+        auto startClock = std::chrono::system_clock::now();
+        boxFilter.fastFilterSSCF(&input[0], radius, height, width, &output[0]);
+        auto endClock = std::chrono::system_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endClock - startClock);
+        tmp = double(duration.count()) * std::chrono::microseconds::period::num / 1000;
+        avgTime += tmp;
+        std::cout << "          [" << i << "]" << " Fast BoxFilfer Cache Friendly Spatial Seperatable Cost time: " << tmp << "ms" << std::endl;
+
+    }
+    std::cout << "\n          Fast BoxFilfer Cache Friendly Spatial Seperatable Average Cost time: " << avgTime / loop << "ms" << std::endl;
+
+    EXPECT_EQ(is_correct(output), true) << " ERROR: result is wrong. " ;
     if (printMat == 1) {
         std::cout << "result: " << std::endl;
         print(&output[0], height, width);
     }
 }
+
+
+TEST(netTest, fast_boxfilter_SS)
+{
+    std::vector<float> input;
+    std::vector<float> output;
+
+    int size = height * width;
+
+    input.resize(size);
+    output.resize(size);
+
+    std::random_device rd;
+    std::mt19937 gen(0);
+    std::uniform_real_distribution<> dis(-2.0, 2.0);
+
+    for (int i = 0; i < size; ++i) {
+        input[i] = dis(gen);
+    }
+
+    for (int i = 0; i < size; ++i) {
+        output[i] = 0;
+    }
+
+    BoxFilter boxFilter;
+    boxFilter.init(height, width, radius);
+
+    float avgTime = 0;
+    float tmp;
+    for (int i = 0; i < loop; ++i) {
+        auto startClock = std::chrono::system_clock::now();
+        boxFilter.fastFilterSS(&input[0], radius, height, width, &output[0]);
+        auto endClock = std::chrono::system_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endClock - startClock);
+        tmp = double(duration.count()) * std::chrono::microseconds::period::num / 1000;
+        avgTime += tmp;
+        std::cout << "          [" << i << "]" << " Fast BoxFilfer Spatial Seperatable Cost time: " << tmp << "ms" << std::endl;
+
+    }
+    std::cout << "\n          Fast BoxFilfer Spatial Seperatable Average Cost time: " << avgTime / loop << "ms" << std::endl;
+
+    EXPECT_EQ(is_correct(output), true) << " ERROR: result is wrong. " ;
+    if (printMat == 1) {
+        std::cout << "result: " << std::endl;
+        print(&output[0], height, width);
+    }
+}
+
 
 
 TEST(netTest, fast_boxfilter_v2)
@@ -264,7 +428,7 @@ TEST(netTest, fast_boxfilter_v2)
     }
     std::cout << "\n          Fast BoxFilfer V2 Average Cost time: " << avgTime / loop << "ms" << std::endl;
 
-
+    EXPECT_EQ(is_correct(output), true) << " ERROR: result is wrong. " ;
     if (printMat == 1) {
         std::cout << "result: " << std::endl;
         print(&output[0], height, width);
